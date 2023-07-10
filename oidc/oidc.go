@@ -284,22 +284,70 @@ func (p *Provider) UserInfoEndpoint() string {
 
 // UserInfo represents the OpenID Connect userinfo claims.
 type UserInfo struct {
-	Subject       string `json:"sub"`
-	Profile       string `json:"profile"`
-	Email         string `json:"email"`
-	EmailVerified bool   `json:"email_verified"`
-
-	claims []byte
+	AlternateEmail         string     `json:"alternate_email"`
+	AlternateEmailVerified string     `json:"alternate_email_verified"`
+	Birthdate              string     `json:"birthdate"`
+	Email                  string     `json:"email"`
+	EmailVerified          bool       `json:"email_verified"`
+	Enabled                bool       `json:"enabled"`
+	Gender                 string     `json:"gender"`
+	Group                  []Group    `json:"group"`
+	HasSuspended           bool       `json:"has_suspended"`
+	Locale                 string     `json:"locale"`
+	Locked                 string     `json:"locked"`
+	Name                   string     `json:"name"`
+	Nickname               string     `json:"nickname"`
+	Phone                  string     `json:"phone"`
+	PhoneVerified          bool       `json:"phone_verified"`
+	Picture                string     `json:"picture"`
+	PreferredUsername      string     `json:"preferred_username"`
+	RegID                  string     `json:"reg_id"`
+	Role                   []Role     `json:"role"`
+	Sub                    string     `json:"sub"`
+	Suspended              bool       `json:"suspended"`
+	UpdatedAt              *time.Time `json:"updated_at"`
+	Zoneinfo               string     `json:"zoneinfo"`
 }
 
-type userInfoRaw struct {
-	Subject string `json:"sub"`
-	Profile string `json:"profile"`
-	Email   string `json:"email"`
-	// Handle providers that return email_verified as a string
-	// https://forums.aws.amazon.com/thread.jspa?messageID=949441&#949441 and
-	// https://discuss.elastic.co/t/openid-error-after-authenticating-against-aws-cognito/206018/11
-	EmailVerified stringAsBool `json:"email_verified"`
+type UserInfoRaw struct {
+	AlternateEmail         string     `json:"alternate_email"`
+	AlternateEmailVerified string     `json:"alternate_email_verified"`
+	Birthdate              string     `json:"birthdate"`
+	Email                  string     `json:"email"`
+	EmailVerified          bool       `json:"email_verified"`
+	Enabled                bool       `json:"enabled"`
+	Gender                 string     `json:"gender"`
+	Group                  []any      `json:"group"`
+	HasSuspended           bool       `json:"has_suspended"`
+	Locale                 string     `json:"locale"`
+	Locked                 string     `json:"locked"`
+	Name                   string     `json:"name"`
+	Nickname               string     `json:"nickname"`
+	Phone                  string     `json:"phone"`
+	PhoneVerified          bool       `json:"phone_verified"`
+	Picture                string     `json:"picture"`
+	PreferredUsername      string     `json:"preferred_username"`
+	RegID                  string     `json:"reg_id"`
+	Role                   []any      `json:"role"`
+	Sub                    string     `json:"sub"`
+	Suspended              bool       `json:"suspended"`
+	UpdatedAt              *time.Time `json:"updated_at"`
+	Zoneinfo               string     `json:"zoneinfo"`
+}
+
+type Group struct {
+	GroupID   string `json:"group_id"`
+	GroupName string `json:"group_name"`
+}
+
+type Role struct {
+	ClientID  string     `json:"client_id"`
+	ExpiredAt *time.Time `json:"expired_at"`
+	IsDefault bool       `json:"is_default"`
+	OrgID     string     `json:"org_id"`
+	OrgName   string     `json:"org_name"`
+	RoleID    string     `json:"role_id"`
+	RoleName  string     `json:"role_name"`
 }
 
 // Claims unmarshals the raw JSON object claims into the provided object.
@@ -350,7 +398,7 @@ func (p *Provider) UserInfo(ctx context.Context, tokenSource oauth2.TokenSource)
 		body = payload
 	}
 
-	var userInfo userInfoRaw
+	var userInfo UserInfoRaw
 	if err := json.Unmarshal(body, &userInfo); err != nil {
 		return nil, fmt.Errorf("oidc: failed to decode userinfo: %v", err)
 	}
@@ -487,7 +535,7 @@ func (sb *stringAsBool) UnmarshalJSON(b []byte) error {
 	switch string(b) {
 	case "true", `"true"`, "1", `"1"`:
 		*sb = true
-	case "false", `"false"`, "0", `"0"`:
+	case "false", `"false"`, "0", `"0"`, "null", "`null`", "", "``":
 		*sb = false
 	default:
 		return errors.New("invalid value for boolean")
