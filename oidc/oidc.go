@@ -284,55 +284,65 @@ func (p *Provider) UserInfoEndpoint() string {
 
 // UserInfo represents the OpenID Connect userinfo claims.
 type UserInfo struct {
-	AlternateEmail         string     `json:"alternate_email"`
-	AlternateEmailVerified string     `json:"alternate_email_verified"`
-	Birthdate              string     `json:"birthdate"`
-	Email                  string     `json:"email"`
-	EmailVerified          bool       `json:"email_verified"`
-	Enabled                bool       `json:"enabled"`
-	Gender                 string     `json:"gender"`
-	Group                  []Group    `json:"group"`
-	HasSuspended           bool       `json:"has_suspended"`
-	Locale                 string     `json:"locale"`
-	Locked                 string     `json:"locked"`
-	Name                   string     `json:"name"`
-	Nickname               string     `json:"nickname"`
-	Phone                  string     `json:"phone"`
-	PhoneVerified          bool       `json:"phone_verified"`
-	Picture                string     `json:"picture"`
-	PreferredUsername      string     `json:"preferred_username"`
-	RegID                  string     `json:"reg_id"`
-	Role                   []Role     `json:"role"`
-	Sub                    string     `json:"sub"`
-	Suspended              bool       `json:"suspended"`
-	UpdatedAt              *time.Time `json:"updated_at"`
-	Zoneinfo               string     `json:"zoneinfo"`
+	AlternateEmail         string  `json:"alternate_email"`
+	AlternateEmailVerified bool    `json:"alternate_email_verified"`
+	Birthdate              string  `json:"birthdate"`
+	Email                  string  `json:"email"`
+	EmailVerified          bool    `json:"email_verified"`
+	Enabled                bool    `json:"enabled"`
+	Gender                 string  `json:"gender"`
+	Group                  []Group `json:"group"`
+	HasSuspended           bool    `json:"has_suspended"`
+	Locale                 string  `json:"locale"`
+	Locked                 string  `json:"locked"`
+	Name                   string  `json:"name"`
+	Nickname               string  `json:"nickname"`
+	Phone                  string  `json:"phone"`
+	PhoneVerified          bool    `json:"phone_verified"`
+	Picture                string  `json:"picture"`
+	PreferredUsername      string  `json:"preferred_username"`
+	RegID                  string  `json:"reg_id"`
+	Role                   []Role  `json:"role"`
+	Sub                    string  `json:"sub"`
+	Suspended              bool    `json:"suspended"`
+	UpdatedAt              string  `json:"updated_at"`
+	Zoneinfo               string  `json:"zoneinfo"`
+
+	claims []byte
 }
 
 type UserInfoRaw struct {
-	AlternateEmail         string     `json:"alternate_email"`
-	AlternateEmailVerified string     `json:"alternate_email_verified"`
-	Birthdate              string     `json:"birthdate"`
-	Email                  string     `json:"email"`
-	EmailVerified          bool       `json:"email_verified"`
-	Enabled                bool       `json:"enabled"`
-	Gender                 string     `json:"gender"`
-	Group                  []any      `json:"group"`
-	HasSuspended           bool       `json:"has_suspended"`
-	Locale                 string     `json:"locale"`
-	Locked                 string     `json:"locked"`
-	Name                   string     `json:"name"`
-	Nickname               string     `json:"nickname"`
-	Phone                  string     `json:"phone"`
-	PhoneVerified          bool       `json:"phone_verified"`
-	Picture                string     `json:"picture"`
-	PreferredUsername      string     `json:"preferred_username"`
-	RegID                  string     `json:"reg_id"`
-	Role                   []any      `json:"role"`
-	Sub                    string     `json:"sub"`
-	Suspended              bool       `json:"suspended"`
-	UpdatedAt              *time.Time `json:"updated_at"`
-	Zoneinfo               string     `json:"zoneinfo"`
+	AlternateEmail         string       `json:"alternate_email"`
+	AlternateEmailVerified stringAsBool `json:"alternate_email_verified"`
+	Birthdate              string       `json:"birthdate"`
+	Email                  string       `json:"email"`
+	EmailVerified          stringAsBool `json:"email_verified"`
+	Enabled                stringAsBool `json:"enabled"`
+	Gender                 string       `json:"gender"`
+	Group                  []Group      `json:"group"`
+	HasSuspended           stringAsBool `json:"has_suspended"`
+	Locale                 string       `json:"locale"`
+	Locked                 string       `json:"locked"`
+	Name                   string       `json:"name"`
+	Nickname               string       `json:"nickname"`
+	Phone                  string       `json:"phone"`
+	PhoneVerified          stringAsBool `json:"phone_verified"`
+	Picture                string       `json:"picture"`
+	PreferredUsername      string       `json:"preferred_username"`
+	RegID                  string       `json:"reg_id"`
+	Role                   []Role       `json:"role"`
+	Sub                    string       `json:"sub"`
+	Suspended              stringAsBool `json:"suspended"`
+	UpdatedAt              stringAsTime `json:"updated_at"`
+	Zoneinfo               string       `json:"zoneinfo"`
+}
+
+type stringAsTime string
+
+func (st *stringAsTime) UnmarshalJSON(b []byte) error {
+	time_string := strings.Trim(string(b), `"`)
+	*st = stringAsTime(time_string)
+	return nil
 }
 
 type Group struct {
@@ -341,13 +351,13 @@ type Group struct {
 }
 
 type Role struct {
-	ClientID  string     `json:"client_id"`
-	ExpiredAt *time.Time `json:"expired_at"`
-	IsDefault bool       `json:"is_default"`
-	OrgID     string     `json:"org_id"`
-	OrgName   string     `json:"org_name"`
-	RoleID    string     `json:"role_id"`
-	RoleName  string     `json:"role_name"`
+	ClientID  string       `json:"client_id"`
+	ExpiredAt string       `json:"expired_at"`
+	IsDefault stringAsBool `json:"is_default"`
+	OrgID     string       `json:"org_id"`
+	OrgName   string       `json:"org_name"`
+	RoleID    string       `json:"role_id"`
+	RoleName  string       `json:"role_name"`
 }
 
 // Claims unmarshals the raw JSON object claims into the provided object.
@@ -402,12 +412,32 @@ func (p *Provider) UserInfo(ctx context.Context, tokenSource oauth2.TokenSource)
 	if err := json.Unmarshal(body, &userInfo); err != nil {
 		return nil, fmt.Errorf("oidc: failed to decode userinfo: %v", err)
 	}
+
 	return &UserInfo{
-		Subject:       userInfo.Subject,
-		Profile:       userInfo.Profile,
-		Email:         userInfo.Email,
-		EmailVerified: bool(userInfo.EmailVerified),
-		claims:        body,
+		AlternateEmail:         userInfo.AlternateEmail,
+		AlternateEmailVerified: bool(userInfo.AlternateEmailVerified),
+		Birthdate:              userInfo.Birthdate,
+		Email:                  userInfo.Email,
+		EmailVerified:          bool(userInfo.EmailVerified),
+		Enabled:                bool(userInfo.Enabled),
+		Gender:                 userInfo.Gender,
+		Group:                  userInfo.Group,
+		HasSuspended:           bool(userInfo.HasSuspended),
+		Locale:                 userInfo.Locale,
+		Locked:                 userInfo.Locked,
+		Name:                   userInfo.Name,
+		Nickname:               userInfo.Nickname,
+		Phone:                  userInfo.Phone,
+		PhoneVerified:          bool(userInfo.PhoneVerified),
+		Picture:                userInfo.Picture,
+		PreferredUsername:      userInfo.PreferredUsername,
+		RegID:                  userInfo.RegID,
+		Role:                   userInfo.Role,
+		Sub:                    userInfo.Sub,
+		Suspended:              bool(userInfo.Suspended),
+		UpdatedAt:              string(userInfo.UpdatedAt),
+		Zoneinfo:               userInfo.Zoneinfo,
+		claims:                 body,
 	}, nil
 }
 
