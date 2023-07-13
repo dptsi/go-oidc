@@ -330,7 +330,7 @@ type UserInfoRaw struct {
 	Picture                string       `json:"picture"`
 	PreferredUsername      string       `json:"preferred_username"`
 	RegID                  string       `json:"reg_id"`
-	Role                   []Role       `json:"role"`
+	Role                   []RoleRaw    `json:"role"`
 	Sub                    string       `json:"sub"`
 	Suspended              stringAsBool `json:"suspended"`
 	UpdatedAt              stringAsTime `json:"updated_at"`
@@ -350,7 +350,7 @@ type Group struct {
 	GroupName string `json:"group_name"`
 }
 
-type Role struct {
+type RoleRaw struct {
 	ClientID  string       `json:"client_id"`
 	ExpiredAt string       `json:"expired_at"`
 	IsDefault stringAsBool `json:"is_default"`
@@ -358,6 +358,34 @@ type Role struct {
 	OrgName   string       `json:"org_name"`
 	RoleID    string       `json:"role_id"`
 	RoleName  string       `json:"role_name"`
+}
+
+type Role struct {
+	ClientID  string `json:"client_id"`
+	ExpiredAt string `json:"expired_at"`
+	IsDefault bool   `json:"is_default"`
+	OrgID     string `json:"org_id"`
+	OrgName   string `json:"org_name"`
+	RoleID    string `json:"role_id"`
+	RoleName  string `json:"role_name"`
+}
+
+func convertRoleRawArrayToRoleArray(roleRaw []RoleRaw) []Role {
+
+	var role []Role
+
+	for _, val := range roleRaw {
+		role = append(role, Role{
+			ClientID:  val.ClientID,
+			ExpiredAt: val.ExpiredAt,
+			IsDefault: bool(val.IsDefault),
+			OrgID:     val.OrgID,
+			OrgName:   val.OrgName,
+			RoleID:    val.RoleID,
+			RoleName:  val.RoleName,
+		})
+	}
+	return role
 }
 
 // Claims unmarshals the raw JSON object claims into the provided object.
@@ -432,7 +460,7 @@ func (p *Provider) UserInfo(ctx context.Context, tokenSource oauth2.TokenSource)
 		Picture:                userInfo.Picture,
 		PreferredUsername:      userInfo.PreferredUsername,
 		RegID:                  userInfo.RegID,
-		Role:                   userInfo.Role,
+		Role:                   convertRoleRawArrayToRoleArray(userInfo.Role),
 		Sub:                    userInfo.Sub,
 		Suspended:              bool(userInfo.Suspended),
 		UpdatedAt:              string(userInfo.UpdatedAt),
