@@ -305,6 +305,7 @@ type UserInfo struct {
 	Role                   []Role  `json:"role"`
 	Sub                    string  `json:"sub"`
 	Suspended              bool    `json:"suspended"`
+	MustChangePassword     bool    `json:"must_change_pwd"`
 	UpdatedAt              string  `json:"updated_at"`
 	Zoneinfo               string  `json:"zoneinfo"`
 
@@ -333,6 +334,7 @@ type UserInfoRaw struct {
 	Role                   []RoleRaw    `json:"role"`
 	Sub                    string       `json:"sub"`
 	Suspended              stringAsBool `json:"suspended"`
+	MustChangePassword     stringAsBool `json:"must_change_pwd"`
 	UpdatedAt              stringAsTime `json:"updated_at"`
 	Zoneinfo               string       `json:"zoneinfo"`
 }
@@ -463,6 +465,7 @@ func (p *Provider) UserInfo(ctx context.Context, tokenSource oauth2.TokenSource)
 		Role:                   convertRoleRawArrayToRoleArray(userInfo.Role),
 		Sub:                    userInfo.Sub,
 		Suspended:              bool(userInfo.Suspended),
+		MustChangePassword:     bool(userInfo.MustChangePassword),
 		UpdatedAt:              string(userInfo.UpdatedAt),
 		Zoneinfo:               userInfo.Zoneinfo,
 		claims:                 body,
@@ -593,10 +596,8 @@ func (sb *stringAsBool) UnmarshalJSON(b []byte) error {
 	switch string(b) {
 	case "true", `"true"`, "1", `"1"`:
 		*sb = true
-	case "false", `"false"`, "0", `"0"`, "null", "`null`", "", "``":
-		*sb = false
 	default:
-		return errors.New("invalid value for boolean")
+		*sb = false
 	}
 	return nil
 }
